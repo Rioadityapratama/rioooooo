@@ -3,16 +3,28 @@ package routes
 import (
 	"bakulos_grapghql/db"
 	"bakulos_grapghql/models"
+
 	"github.com/graphql-go/graphql"
+	"golang.org/x/crypto/bcrypt"
 )
 
-var DB = db.DB
+func getString(p graphql.ResolveParams, key string) string {
+	if val, ok := p.Args[key].(string); ok {
+		return val
+	}
+	return ""
+}
+
+func getInt(p graphql.ResolveParams, key string) int {
+	if val, ok := p.Args[key].(int); ok {
+		return val
+	}
+	return 0
+}
 
 var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "RootMutation",
 	Fields: graphql.Fields{
-
-		// USER
 		"createUser": &graphql.Field{
 			Type: UserType,
 			Args: graphql.FieldConfigArgument{
@@ -21,12 +33,16 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p.Args["password"].(string)), bcrypt.DefaultCost)
+				if err != nil {
+					return nil, err
+				}
 				user := models.User{
 					Nama:     p.Args["nama"].(string),
 					Email:    p.Args["email"].(string),
-					Password: p.Args["password"].(string),
+					Password: string(hashedPassword),
 				}
-				if err := DB.Create(&user).Error; err != nil {
+				if err := db.DB.Create(&user).Error; err != nil {
 					return nil, err
 				}
 				return user, nil
@@ -43,20 +59,21 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var user models.User
-				id := p.Args["id_user"].(int)
-				if err := DB.First(&user, id).Error; err != nil {
+				id := getInt(p, "id_user")
+				if err := db.DB.First(&user, id).Error; err != nil {
 					return nil, err
 				}
-				if v, ok := p.Args["nama"].(string); ok {
+				if v := getString(p, "nama"); v != "" {
 					user.Nama = v
 				}
-				if v, ok := p.Args["email"].(string); ok {
+				if v := getString(p, "email"); v != "" {
 					user.Email = v
 				}
-				if v, ok := p.Args["password"].(string); ok {
-					user.Password = v
+				if v := getString(p, "password"); v != "" {
+					hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(v), bcrypt.DefaultCost)
+					user.Password = string(hashedPassword)
 				}
-				if err := DB.Save(&user).Error; err != nil {
+				if err := db.DB.Save(&user).Error; err != nil {
 					return nil, err
 				}
 				return user, nil
@@ -69,14 +86,13 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"id_user": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if err := DB.Delete(&models.User{}, p.Args["id_user"].(int)).Error; err != nil {
+				if err := db.DB.Delete(&models.User{}, getInt(p, "id_user")).Error; err != nil {
 					return false, err
 				}
 				return true, nil
 			},
 		},
 
-		// PRODUCT
 		"createProduct": &graphql.Field{
 			Type: ProductType,
 			Args: graphql.FieldConfigArgument{
@@ -90,17 +106,21 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"warna":      &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				product := models.Product{
-					IDPenjual: uint(p.Args["id_penjual"].(int)),
-					Kategori:  p.Args["kategori"].(string),
-					Size:      p.Args["size"].(string),
-					Deskripsi: p.Args["deskripsi"].(string),
-					Brand:     p.Args["brand"].(string),
-					Price:     int(p.Args["price"].(float64)),
-					Image:     p.Args["image"].(string),
-					Warna:     p.Args["warna"].(string),
+				price := 0
+				if v, ok := p.Args["price"].(float64); ok {
+					price = int(v)
 				}
-				if err := DB.Create(&product).Error; err != nil {
+				product := models.Product{
+					IDPenjual: uint(getInt(p, "id_penjual")),
+					Kategori:  getString(p, "kategori"),
+					Size:      getString(p, "size"),
+					Deskripsi: getString(p, "deskripsi"),
+					Brand:     getString(p, "brand"),
+					Price:     price,
+					Image:     getString(p, "image"),
+					Warna:     getString(p, "warna"),
+				}
+				if err := db.DB.Create(&product).Error; err != nil {
 					return nil, err
 				}
 				return product, nil
@@ -113,28 +133,27 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"id_product": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if err := DB.Delete(&models.Product{}, p.Args["id_product"].(int)).Error; err != nil {
+				if err := db.DB.Delete(&models.Product{}, getInt(p, "id_product")).Error; err != nil {
 					return false, err
 				}
 				return true, nil
 			},
 		},
 
-		// KERANJANG
 		"createKeranjang": &graphql.Field{
 			Type: KeranjangType,
 			Args: graphql.FieldConfigArgument{
-				"id_product": &graphql.ArgumentConfig{Type: graphql.Int},
-				"id_user":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"jumlah":     &graphql.ArgumentConfig{Type: graphql.Int},
+				"id_product": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"id_user":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"jumlah":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				keranjang := models.Keranjang{
-					IDProduct: uint(p.Args["id_product"].(int)),
-					IDUser:    uint(p.Args["id_user"].(int)),
-					Jumlah:    p.Args["jumlah"].(int),
+					IDProduct: uint(getInt(p, "id_product")),
+					IDUser:    uint(getInt(p, "id_user")),
+					Jumlah:    getInt(p, "jumlah"),
 				}
-				if err := DB.Create(&keranjang).Error; err != nil {
+				if err := db.DB.Create(&keranjang).Error; err != nil {
 					return nil, err
 				}
 				return keranjang, nil
@@ -147,7 +166,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"id_keranjang": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if err := DB.Delete(&models.Keranjang{}, p.Args["id_keranjang"].(int)).Error; err != nil {
+				if err := db.DB.Delete(&models.Keranjang{}, getInt(p, "id_keranjang")).Error; err != nil {
 					return false, err
 				}
 				return true, nil
