@@ -1,7 +1,11 @@
 // graphql/types.go
 package routes
 
-import "github.com/graphql-go/graphql"
+import (
+	"bakulos_grapghql/models"
+
+	"github.com/graphql-go/graphql"
+)
 
 var UserType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "User",
@@ -31,6 +35,7 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id_product": &graphql.Field{Type: graphql.Int},
 		"id_penjual": &graphql.Field{Type: graphql.Int},
+		"namaproduk": &graphql.Field{Type: graphql.String},
 		"kategori":   &graphql.Field{Type: graphql.String},
 		"size":       &graphql.Field{Type: graphql.String},
 		"deskripsi":  &graphql.Field{Type: graphql.String},
@@ -45,12 +50,37 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Keranjang",
 	Fields: graphql.Fields{
+		// kamu pasti punya ini:
 		"id_keranjang": &graphql.Field{Type: graphql.Int},
-		"id_product":   &graphql.Field{Type: graphql.Int},
 		"id_user":      &graphql.Field{Type: graphql.Int},
+		"id_product":   &graphql.Field{Type: graphql.Int},
 		"jumlah":       &graphql.Field{Type: graphql.Int},
+
+		// KAMU HARUS TAMBAHKAN INI ⬇
+		"user": &graphql.Field{
+			Type: UserType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return p.Source.(models.Keranjang).User, nil
+			},
+		},
+		"product": &graphql.Field{
+			Type: ProductType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return p.Source.(models.Keranjang).Product, nil
+			},
+		},
 	},
 })
+
+//var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
+//	Name: "Keranjang",
+//	Fields: graphql.Fields{
+//		"id_keranjang": &graphql.Field{Type: graphql.Int},
+//		"id_product":   &graphql.Field{Type: graphql.Int},
+//		"id_user":      &graphql.Field{Type: graphql.Int},
+//		"jumlah":       &graphql.Field{Type: graphql.Int},
+//	},
+//})
 
 var FavoriteType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Favorite",

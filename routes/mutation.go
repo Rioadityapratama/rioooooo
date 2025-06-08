@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Helper untuk parsing string dan int
+// Helper functions to get arguments from ResolveParams
 func getString(p graphql.ResolveParams, key string) string {
 	if val, ok := p.Args[key].(string); ok {
 		return val
@@ -29,7 +29,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "RootMutation",
 	Fields: graphql.Fields{
 
-		// ==== USER ====
+		// ==================== USER ====================
 		"createUser": &graphql.Field{
 			Type: UserType,
 			Args: graphql.FieldConfigArgument{
@@ -85,14 +85,12 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				if err := db.DB.Model(&user).Updates(updates).Error; err != nil {
 					return nil, fmt.Errorf("gagal update data user: %v", err)
 				}
-				if err := db.DB.First(&user, id).Error; err != nil {
-					return nil, fmt.Errorf("gagal mengambil ulang data: %v", err)
-				}
+				db.DB.First(&user, id)
 				return user, nil
 			},
 		},
 
-		// ==== PENJUAL ====
+		// ==================== PENJUAL ====================
 		"createPenjual": &graphql.Field{
 			Type: PenjualType,
 			Args: graphql.FieldConfigArgument{
@@ -148,55 +146,50 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				if err := db.DB.Model(&penjual).Updates(updates).Error; err != nil {
 					return nil, fmt.Errorf("gagal update data penjual: %v", err)
 				}
-				if err := db.DB.First(&penjual, id).Error; err != nil {
-					return nil, fmt.Errorf("gagal mengambil ulang data: %v", err)
-				}
+				db.DB.First(&penjual, id)
 				return penjual, nil
 			},
 		},
 
-		// ==== PRODUCT ====
+		// ==================== PRODUCT ====================
 		"createProduct": &graphql.Field{
 			Type: ProductType,
 			Args: graphql.FieldConfigArgument{
-				"id_penjual": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
-				"kategori":   &graphql.ArgumentConfig{Type: graphql.String},
-				"size":       &graphql.ArgumentConfig{Type: graphql.String},
-				"deskripsi":  &graphql.ArgumentConfig{Type: graphql.String},
-				"brand":      &graphql.ArgumentConfig{Type: graphql.String},
-				"price":      &graphql.ArgumentConfig{Type: graphql.Float},
-				"image":      &graphql.ArgumentConfig{Type: graphql.String},
-				"warna":      &graphql.ArgumentConfig{Type: graphql.String},
+				"id_penjual":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"namaproduk":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"kategori":    &graphql.ArgumentConfig{Type: graphql.String},
+				"size":        &graphql.ArgumentConfig{Type: graphql.String},
+				"deskripsi":   &graphql.ArgumentConfig{Type: graphql.String},
+				"brand":       &graphql.ArgumentConfig{Type: graphql.String},
+				"price":       &graphql.ArgumentConfig{Type: graphql.Float},
+				"image":       &graphql.ArgumentConfig{Type: graphql.String},
+				"warna":       &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				idPenjual := getInt(p, "id_penjual")
-
 				var penjual models.Penjual
 				if err := db.DB.First(&penjual, idPenjual).Error; err != nil {
 					return nil, fmt.Errorf("penjual dengan id %d tidak ditemukan", idPenjual)
 				}
-
 				price := 0
 				if v, ok := p.Args["price"].(float64); ok {
 					price = int(v)
 				}
-
 				product := models.Product{
-					IDPenjual: uint(idPenjual),
-					Kategori:  getString(p, "kategori"),
-					Size:      getString(p, "size"),
-					Deskripsi: getString(p, "deskripsi"),
-					Brand:     getString(p, "brand"),
-					Price:     price,
-					Image:     getString(p, "image"),
-					Warna:     getString(p, "warna"),
+					IDPenjual:  uint(idPenjual),
+					NamaProduk: getString(p, "namaproduk"),
+					Kategori:   getString(p, "kategori"),
+					Size:       getString(p, "size"),
+					Deskripsi:  getString(p, "deskripsi"),
+					Brand:      getString(p, "brand"),
+					Price:      price,
+					Image:      getString(p, "image"),
+					Warna:      getString(p, "warna"),
 				}
-
 				if err := db.DB.Create(&product).Error; err != nil {
 					return nil, fmt.Errorf("gagal menyimpan produk: %v", err)
 				}
-
-				_ = db.DB.Preload("Penjual").First(&product, product.IDProduct).Error
+				db.DB.Preload("Penjual").First(&product, product.IDProduct)
 				return product, nil
 			},
 		},
@@ -205,6 +198,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 			Type: ProductType,
 			Args: graphql.FieldConfigArgument{
 				"id_product":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"namaproduk":  &graphql.ArgumentConfig{Type: graphql.String},
 				"size":        &graphql.ArgumentConfig{Type: graphql.String},
 				"brand":       &graphql.ArgumentConfig{Type: graphql.String},
 				"deskripsi":   &graphql.ArgumentConfig{Type: graphql.String},
@@ -214,16 +208,20 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"warna":       &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				idProduct := getInt(p, "id_product")
-
+				id := getInt(p, "id_product")
 				var product models.Product
-				if err := db.DB.First(&product, idProduct).Error; err != nil {
-					return nil, fmt.Errorf("produk dengan id %d tidak ditemukan", idProduct)
+				if err := db.DB.First(&product, id).Error; err != nil {
+					return nil, fmt.Errorf("produk tidak ditemukan")
 				}
-
 				updates := map[string]interface{}{}
+				if v := getString(p, "namaproduk"); v != "" {
+					updates["nama"] = v
+				}
 				if v := getString(p, "size"); v != "" {
 					updates["size"] = v
+				}
+				if v := getString(p, "brand"); v != "" {
+					updates["brand"] = v
 				}
 				if v := getString(p, "deskripsi"); v != "" {
 					updates["deskripsi"] = v
@@ -231,27 +229,19 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				if v := getString(p, "kategori"); v != "" {
 					updates["kategori"] = v
 				}
-				if v := getString(p, "brand"); v != "" {
-					updates["brand"] = v
-				}
-				if v, ok := p.Args["price"].(float64); ok {
-					updates["price"] = int(v)
-				}
 				if v := getString(p, "image"); v != "" {
 					updates["image"] = v
 				}
 				if v := getString(p, "warna"); v != "" {
 					updates["warna"] = v
 				}
-
+				if v, ok := p.Args["price"].(float64); ok {
+					updates["price"] = int(v)
+				}
 				if err := db.DB.Model(&product).Updates(updates).Error; err != nil {
-					return nil, fmt.Errorf("gagal update produk: %v", err)
+					return nil, fmt.Errorf("gagal update")
 				}
-
-				if err := db.DB.Preload("Penjual").First(&product, idProduct).Error; err != nil {
-					return nil, fmt.Errorf("gagal memuat ulang produk: %v", err)
-				}
-
+				db.DB.Preload("Penjual").First(&product, id)
 				return product, nil
 			},
 		},
@@ -268,7 +258,6 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				id := getInt(p, "id_product")
-
 				var product models.Product
 				if err := db.DB.First(&product, id).Error; err != nil {
 					return map[string]interface{}{"message": "Produk tidak ditemukan"}, nil
@@ -280,7 +269,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 
-		// ==== KERANJANG ====
+		// ==================== KERANJANG ====================
 		"createKeranjang": &graphql.Field{
 			Type: KeranjangType,
 			Args: graphql.FieldConfigArgument{
@@ -289,28 +278,93 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"jumlah":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				idProduct := getInt(p, "id_product")
+				idUser := getInt(p, "id_user")
+				jumlah := getInt(p, "jumlah")
+
+				var user models.User
+				if err := db.DB.First(&user, idUser).Error; err != nil {
+					return nil, fmt.Errorf("user tidak ditemukan")
+				}
+				var product models.Product
+				if err := db.DB.First(&product, idProduct).Error; err != nil {
+					return nil, fmt.Errorf("produk tidak ditemukan")
+				}
 				keranjang := models.Keranjang{
-					IDProduct: uint(getInt(p, "id_product")),
-					IDUser:    uint(getInt(p, "id_user")),
-					Jumlah:    getInt(p, "jumlah"),
+					IDProduct: uint(idProduct),
+					IDUser:    uint(idUser),
+					Jumlah:    jumlah,
 				}
 				if err := db.DB.Create(&keranjang).Error; err != nil {
 					return nil, err
+				}
+				db.DB.Preload("User").Preload("Product").First(&keranjang, keranjang.IDKeranjang)
+				return keranjang, nil
+			},
+		},
+
+		"updateKeranjang": &graphql.Field{
+			Type: KeranjangType,
+			Args: graphql.FieldConfigArgument{
+				"id_keranjang": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"id_product":   &graphql.ArgumentConfig{Type: graphql.Int},
+				"jumlah":       &graphql.ArgumentConfig{Type: graphql.Int},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				idKeranjang := getInt(p, "id_keranjang")
+				var keranjang models.Keranjang
+				if err := db.DB.First(&keranjang, idKeranjang).Error; err != nil {
+					return nil, fmt.Errorf("keranjang dengan id %d tidak ditemukan", idKeranjang)
+				}
+
+				updates := map[string]interface{}{}
+
+				if v := getInt(p, "id_product"); v != 0 {
+					var product models.Product
+					if err := db.DB.First(&product, v).Error; err != nil {
+						return nil, fmt.Errorf("produk dengan id %d tidak ditemukan", v)
+					}
+					updates["id_product"] = v
+				}
+				if v := getInt(p, "jumlah"); v != 0 {
+					updates["jumlah"] = v
+				}
+
+				if len(updates) == 0 {
+					return nil, fmt.Errorf("tidak ada field yang diperbarui")
+				}
+
+				if err := db.DB.Model(&keranjang).Updates(updates).Error; err != nil {
+					return nil, fmt.Errorf("gagal mengupdate keranjang: %v", err)
+				}
+
+				if err := db.DB.Preload("User").Preload("Product").First(&keranjang, idKeranjang).Error; err != nil {
+					return nil, fmt.Errorf("gagal mengambil ulang keranjang")
 				}
 				return keranjang, nil
 			},
 		},
 
 		"deleteKeranjang": &graphql.Field{
-			Type: graphql.Boolean,
+			Type: graphql.NewObject(graphql.ObjectConfig{
+				Name: "DeleteKeranjangResponse",
+				Fields: graphql.Fields{
+					"message": &graphql.Field{Type: graphql.String},
+				},
+			}),
 			Args: graphql.FieldConfigArgument{
 				"id_keranjang": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if err := db.DB.Delete(&models.Keranjang{}, getInt(p, "id_keranjang")).Error; err != nil {
-					return false, err
+				id := getInt(p, "id_keranjang")
+				var keranjang models.Keranjang
+				if err := db.DB.First(&keranjang, id).Error; err != nil {
+					return map[string]interface{}{"message": "Keranjang tidak ditemukan"}, nil
 				}
-				return true, nil
+				if err := db.DB.Delete(&keranjang).Error; err != nil {
+					return map[string]interface{}{"message": "Gagal menghapus keranjang"}, nil
+				}
+				return map[string]interface{}{"message": "Keranjang berhasil dihapus"}, nil
 			},
 		},
 	},
