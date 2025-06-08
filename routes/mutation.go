@@ -36,6 +36,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"nama":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"email":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"no_telp":  &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p.Args["password"].(string)), bcrypt.DefaultCost)
@@ -45,6 +46,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				user := models.User{
 					Nama:     p.Args["nama"].(string),
 					Email:    p.Args["email"].(string),
+					NoTelp:  getString(p, "no_telp"),
 					Password: string(hashedPassword),
 				}
 				if err := db.DB.Create(&user).Error; err != nil {
@@ -60,6 +62,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"id_user":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 				"nama":     &graphql.ArgumentConfig{Type: graphql.String},
 				"email":    &graphql.ArgumentConfig{Type: graphql.String},
+				"no_telp":  &graphql.ArgumentConfig{Type: graphql.String},
 				"password": &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -74,6 +77,9 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				updates := map[string]interface{}{}
 				if v := getString(p, "nama"); v != "" {
 					updates["nama"] = v
+				}
+				if v := getString(p, "no_telp"); v != "" {
+					updates["no_telp"] = v
 				}
 				if v := getString(p, "password"); v != "" {
 					hashedPassword, err := bcrypt.GenerateFromPassword([]byte(v), bcrypt.DefaultCost)
@@ -97,6 +103,7 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"nama":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"email":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"no_telp":  &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p.Args["password"].(string)), bcrypt.DefaultCost)
@@ -106,7 +113,9 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				penjual := models.Penjual{
 					Nama:     p.Args["nama"].(string),
 					Email:    p.Args["email"].(string),
+					NoTelp:  getString(p, "no_telp"),
 					Password: string(hashedPassword),
+					
 				}
 				if err := db.DB.Create(&penjual).Error; err != nil {
 					return nil, err
@@ -122,6 +131,8 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				"nama":       &graphql.ArgumentConfig{Type: graphql.String},
 				"password":   &graphql.ArgumentConfig{Type: graphql.String},
 				"email":      &graphql.ArgumentConfig{Type: graphql.String},
+				"no_telp":    &graphql.ArgumentConfig{Type: graphql.String},
+
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if _, exists := p.Args["email"]; exists {
@@ -135,6 +146,9 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				updates := map[string]interface{}{}
 				if v := getString(p, "nama"); v != "" {
 					updates["nama"] = v
+				}
+				if v := getString(p, "no_telp"); v != "" {
+					updates["no_telp"] = v
 				}
 				if v := getString(p, "password"); v != "" {
 					hashedPassword, err := bcrypt.GenerateFromPassword([]byte(v), bcrypt.DefaultCost)
@@ -367,5 +381,394 @@ var RootMutation = graphql.NewObject(graphql.ObjectConfig{
 				return map[string]interface{}{"message": "Keranjang berhasil dihapus"}, nil
 			},
 		},
+		// ==================== FAVORITE ====================
+
+		"createFavorite": &graphql.Field{
+			Type: FavoriteType,
+			Args: graphql.FieldConfigArgument{
+				"id_product": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"id_user":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				idProduct := getInt(p, "id_product")
+				idUser := getInt(p, "id_user")
+
+				var user models.User
+				if err := db.DB.First(&user, idUser).Error; err != nil {
+					return nil, fmt.Errorf("user tidak ditemukan")
+				}
+				var product models.Product
+				if err := db.DB.First(&product, idProduct).Error; err != nil {
+					return nil, fmt.Errorf("produk tidak ditemukan")
+				}
+
+				favorite := models.Favorite{
+					IDProduct: uint(idProduct),
+					IDUser:    uint(idUser),
+				}
+				if err := db.DB.Create(&favorite).Error; err != nil {
+					return nil, fmt.Errorf("gagal menyimpan favorite: %v", err)
+				}
+				db.DB.Preload("User").Preload("Product").First(&favorite, favorite.IDFavorite)
+				return favorite, nil
+
+			},
+		},
+		"updateFavorite": &graphql.Field{
+			Type: FavoriteType,
+			Args: graphql.FieldConfigArgument{
+				"id_favorite": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"id_product":  &graphql.ArgumentConfig{Type: graphql.Int},
+				"id_user":     &graphql.ArgumentConfig{Type: graphql.Int},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				idFavorite := getInt(p, "id_favorite")
+				var favorite models.Favorite
+				if err := db.DB.First(&favorite, idFavorite).Error; err != nil {
+					return nil, fmt.Errorf("favorite dengan id %d tidak ditemukan", idFavorite)
+				}
+
+				updates := map[string]interface{}{}
+
+				if v := getInt(p, "id_product"); v != 0 {
+					var product models.Product
+					if err := db.DB.First(&product, v).Error; err != nil {
+						return nil, fmt.Errorf("produk dengan id %d tidak ditemukan", v)
+					}
+					updates["id_product"] = v
+				}
+				if v := getInt(p, "id_user"); v != 0 {
+					var user models.User
+					if err := db.DB.First(&user, v).Error; err != nil {
+						return nil, fmt.Errorf("user dengan id %d tidak ditemukan", v)
+					}
+					updates["id_user"] = v
+				}
+
+				if len(updates) == 0 {
+					return nil, fmt.Errorf("tidak ada field yang diperbarui")
+				}
+
+				if err := db.DB.Model(&favorite).Updates(updates).Error; err != nil {
+					return nil, fmt.Errorf("gagal mengupdate favorite: %v", err)
+				}
+
+				if err := db.DB.Preload("User").Preload("Product").First(&favorite, idFavorite).Error; err != nil {
+					return nil, fmt.Errorf("gagal mengambil ulang favorite")
+				}
+				return favorite, nil
+			},
+		},
+
+		"deleteFavorite": &graphql.Field{
+			Type: graphql.NewObject(graphql.ObjectConfig{
+				Name: "DeleteFavoriteResponse",
+				Fields: graphql.Fields{
+					"message": &graphql.Field{Type: graphql.String},
+				},
+			}),
+			Args: graphql.FieldConfigArgument{
+				"id_favorite": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				id := getInt(p, "id_favorite")
+				var favorite models.Favorite
+				if err := db.DB.First(&favorite, id).Error; err != nil {
+					return map[string]interface{}{"message": "Favorite tidak ditemukan"}, nil
+				}
+				if err := db.DB.Delete(&favorite).Error; err != nil {
+					return map[string]interface{}{"message": "Gagal menghapus favorite"}, nil
+				}
+				return map[string]interface{}{"message": "Favorite berhasil dihapus"}, nil
+			},
+		},
+
+		// ==================== ALAMAT ====================
+"createAlamat": &graphql.Field{
+	Type: AlamatType,
+	Args: graphql.FieldConfigArgument{
+		"id_user": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"alamat":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		idUser := getInt(p, "id_user")
+
+		// Cek apakah user ada
+		var user models.User
+		if err := db.DB.First(&user, idUser).Error; err != nil {
+			return nil, fmt.Errorf("user dengan id %d tidak ditemukan", idUser)
+		}
+
+		alamat := models.Alamat{
+			IDUser: uint(idUser),
+			Alamat: getString(p, "alamat"),
+		}
+
+		// Simpan alamat
+		if err := db.DB.Create(&alamat).Error; err != nil {
+			return nil, fmt.Errorf("gagal membuat alamat: %v", err)
+		}
+
+		// Preload relasi user
+		if err := db.DB.Preload("User").First(&alamat, alamat.IDAlamat).Error; err != nil {
+			return nil, fmt.Errorf("gagal mengambil data alamat dengan relasi user")
+		}
+
+		return alamat, nil
+	},
+},
+
+"updateAlamat": &graphql.Field{
+	Type: AlamatType,
+	Args: graphql.FieldConfigArgument{
+		"id_alamat": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"alamat":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		id := getInt(p, "id_alamat")
+
+		var alamat models.Alamat
+		if err := db.DB.First(&alamat, id).Error; err != nil {
+			return nil, fmt.Errorf("alamat dengan id %d tidak ditemukan", id)
+		}
+
+		alamat.Alamat = getString(p, "alamat")
+		if err := db.DB.Save(&alamat).Error; err != nil {
+			return nil, fmt.Errorf("gagal mengupdate alamat: %v", err)
+		}
+
+		return alamat, nil
+	},
+},
+
+"deleteAlamat": &graphql.Field{
+	Type: graphql.NewObject(graphql.ObjectConfig{
+		Name: "DeleteAlamatResponse",
+		Fields: graphql.Fields{
+			"message": &graphql.Field{Type: graphql.String},
+		},
+	}),
+	Args: graphql.FieldConfigArgument{
+		"id_alamat": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		id := getInt(p, "id_alamat")
+
+		var alamat models.Alamat
+		if err := db.DB.First(&alamat, id).Error; err != nil {
+			return map[string]interface{}{"message": "Alamat tidak ditemukan"}, nil
+		}
+
+		if err := db.DB.Delete(&alamat).Error; err != nil {
+			return map[string]interface{}{"message": "Gagal menghapus alamat"}, nil
+		}
+
+		return map[string]interface{}{"message": "Alamat berhasil dihapus"}, nil
+	},
+},
+
+// ==================== CHECKOUT ====================
+"createCheckout": &graphql.Field{
+	Type: CheckoutType,
+	Args: graphql.FieldConfigArgument{
+		"id_user":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"id_product":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"id_keranjang":      &graphql.ArgumentConfig{Type: graphql.Int}, // optional
+		"id_alamat":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"metode_pengiriman": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"pembayaran":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"jumlah":            &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		idUser := getInt(p, "id_user")
+		idProduct := getInt(p, "id_product")
+		idAlamat := getInt(p, "id_alamat")
+
+		var user models.User
+		if err := db.DB.First(&user, idUser).Error; err != nil {
+			return nil, fmt.Errorf("user dengan id %d tidak ditemukan", idUser)
+		}
+
+		var product models.Product
+		if err := db.DB.First(&product, idProduct).Error; err != nil {
+			return nil, fmt.Errorf("produk dengan id %d tidak ditemukan", idProduct)
+		}
+
+		var alamat models.Alamat
+		if err := db.DB.First(&alamat, idAlamat).Error; err != nil {
+			return nil, fmt.Errorf("alamat dengan id %d tidak ditemukan", idAlamat)
+		}
+
+		var idKeranjang *uint = nil
+		if val, ok := p.Args["id_keranjang"]; ok {
+			tempID := uint(val.(int))
+			var keranjang models.Keranjang
+			if err := db.DB.First(&keranjang, tempID).Error; err != nil {
+				return nil, fmt.Errorf("keranjang dengan id %d tidak ditemukan", tempID)
+			}
+			idKeranjang = &tempID
+		}
+
+		checkout := models.Checkout{
+			IDUser:           uint(idUser),
+			IDProduct:        uint(idProduct),
+			IDAlamat:         uint(idAlamat),
+			IDKeranjang:      idKeranjang,
+			MetodePengiriman: getString(p, "metode_pengiriman"),
+			Pembayaran:       getString(p, "pembayaran"),
+			Jumlah:           getInt(p, "jumlah"),
+		}
+
+		if err := db.DB.Create(&checkout).Error; err != nil {
+			return nil, err
+		}
+
+		if err := db.DB.
+			Preload("User").
+			Preload("Product").
+			Preload("Alamat").
+			Preload("Keranjang").
+			First(&checkout, checkout.IDCheckout).Error; err != nil {
+			return nil, err
+		}
+
+		return checkout, nil
+	},
+},
+
+"updateCheckout": &graphql.Field{
+	Type: CheckoutType,
+	Args: graphql.FieldConfigArgument{
+		"id_checkout":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"id_product":        &graphql.ArgumentConfig{Type: graphql.Int},
+		"id_alamat":         &graphql.ArgumentConfig{Type: graphql.Int},
+		"id_keranjang":      &graphql.ArgumentConfig{Type: graphql.Int},
+		"metode_pengiriman": &graphql.ArgumentConfig{Type: graphql.String},
+		"pembayaran":        &graphql.ArgumentConfig{Type: graphql.String},
+		"jumlah":            &graphql.ArgumentConfig{Type: graphql.Int},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		id := getInt(p, "id_checkout")
+		var checkout models.Checkout
+		if err := db.DB.First(&checkout, id).Error; err != nil {
+			return nil, fmt.Errorf("checkout dengan id %d tidak ditemukan", id)
+		}
+
+		if v := getInt(p, "id_product"); v != 0 {
+			checkout.IDProduct = uint(v)
+		}
+		if v := getInt(p, "id_alamat"); v != 0 {
+			checkout.IDAlamat = uint(v)
+		}
+		if v := getInt(p, "id_keranjang"); v != 0 {
+			u := uint(v)
+			checkout.IDKeranjang = &u
+		}
+		if v := getString(p, "metode_pengiriman"); v != "" {
+			checkout.MetodePengiriman = v
+		}
+		if v := getString(p, "pembayaran"); v != "" {
+			checkout.Pembayaran = v
+		}
+		if v := getInt(p, "jumlah"); v != 0 {
+			checkout.Jumlah = v
+		}
+
+		if err := db.DB.Save(&checkout).Error; err != nil {
+			return nil, err
+		}
+
+		if err := db.DB.
+			Preload("User").
+			Preload("Product").
+			Preload("Alamat").
+			Preload("Keranjang").
+			First(&checkout, checkout.IDCheckout).Error; err != nil {
+			return nil, err
+		}
+
+		return checkout, nil
+	},
+},
+
+"deleteCheckout": &graphql.Field{
+	Type: graphql.String,
+	Args: graphql.FieldConfigArgument{
+		"id_checkout": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		id := getInt(p, "id_checkout")
+		var checkout models.Checkout
+		if err := db.DB.First(&checkout, id).Error; err != nil {
+			return nil, fmt.Errorf("checkout dengan id %d tidak ditemukan", id)
+		}
+		if err := db.DB.Delete(&checkout).Error; err != nil {
+			return nil, err
+		}
+		return "Checkout berhasil dihapus", nil
+	},
+},		
+
+// ==================== HISTORY ====================
+"createHistory": &graphql.Field{
+	Type: HistoryType,
+	Args: graphql.FieldConfigArgument{
+		"id_checkout": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		idCheckout := getInt(p, "id_checkout")
+
+		// Validasi: pastikan checkout ada
+		var checkout models.Checkout
+		if err := db.DB.First(&checkout, idCheckout).Error; err != nil {
+			return nil, fmt.Errorf("checkout dengan id %d tidak ditemukan", idCheckout)
+		}
+
+		history := models.History{
+			IDCheckout: uint(idCheckout),
+		}
+
+		// Buat history baru
+		if err := db.DB.Create(&history).Error; err != nil {
+			return nil, fmt.Errorf("gagal membuat history: %v", err)
+		}
+
+		// Preload relasi checkout beserta relasi turunannya
+		if err := db.DB.
+			Preload("Checkout").
+			Preload("Checkout.User").
+			Preload("Checkout.Product").
+			Preload("Checkout.Alamat").
+			Preload("Checkout.Keranjang").
+			First(&history, history.IDHistory).Error; err != nil {
+			return nil, err
+		}
+
+		return history, nil
+	},
+},
+
+"deleteHistory": &graphql.Field{
+	Type: graphql.String,
+	Args: graphql.FieldConfigArgument{
+		"id_history": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		id := getInt(p, "id_history")
+
+		// Cari history berdasarkan ID
+		var history models.History
+		if err := db.DB.First(&history, id).Error; err != nil {
+			return nil, fmt.Errorf("history dengan id %d tidak ditemukan", id)
+		}
+
+		// Hapus history
+		if err := db.DB.Delete(&history).Error; err != nil {
+			return nil, fmt.Errorf("gagal menghapus history: %v", err)
+		}
+
+		return "History berhasil dihapus", nil
+	},
+},
 	},
 })

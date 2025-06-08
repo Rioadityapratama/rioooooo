@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"bakulos_grapghql/models"
-
 	"github.com/graphql-go/graphql"
 )
 
@@ -12,20 +10,51 @@ var UserType = graphql.NewObject(graphql.ObjectConfig{
 		"id_user": &graphql.Field{Type: graphql.Int},
 		"nama":    &graphql.Field{Type: graphql.String},
 		"email":   &graphql.Field{Type: graphql.String},
+		"no_telp": &graphql.Field{Type: graphql.String},
 	},
 })
 
 var CheckoutType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Checkout",
 	Fields: graphql.Fields{
-		"id_checkout":       &graphql.Field{Type: graphql.Int},
-		"id_user":           &graphql.Field{Type: graphql.Int},
-		"id_product":        &graphql.Field{Type: graphql.Int},
-		"id_keranjang":      &graphql.Field{Type: graphql.Int},
-		"alamat":            &graphql.Field{Type: graphql.String},
-		"metode_pengiriman": &graphql.Field{Type: graphql.String},
-		"pembayaran":        &graphql.Field{Type: graphql.String},
-		"jumlah":            &graphql.Field{Type: graphql.Int},
+		"id_checkout": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"id_user": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"id_product": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"id_keranjang": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"id_alamat": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"metode_pengiriman": &graphql.Field{
+			Type: graphql.String,
+		},
+		"pembayaran": &graphql.Field{
+			Type: graphql.String,
+		},
+		"jumlah": &graphql.Field{
+			Type: graphql.Int,
+		},
+
+		// RELASI
+		"user": &graphql.Field{
+			Type: UserType,
+		},
+		"product": &graphql.Field{
+			Type: ProductType,
+		},
+		"keranjang": &graphql.Field{
+			Type: KeranjangType,
+		},
+		"alamat": &graphql.Field{
+			Type: AlamatType,
+		},
 	},
 })
 
@@ -53,20 +82,13 @@ var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
 		"id_user":      &graphql.Field{Type: graphql.Int},
 		"id_product":   &graphql.Field{Type: graphql.Int},
 		"jumlah":       &graphql.Field{Type: graphql.Int},
-
-		// Ditambahin agar user dan produt muncul
 		"user": &graphql.Field{
 			Type: UserType,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return p.Source.(models.Keranjang).User, nil
-			},
 		},
 		"product": &graphql.Field{
 			Type: ProductType,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return p.Source.(models.Keranjang).Product, nil
-			},
-		},
+		 },
+
 	},
 })
 
@@ -76,6 +98,12 @@ var FavoriteType = graphql.NewObject(graphql.ObjectConfig{
 		"id_favorite": &graphql.Field{Type: graphql.Int},
 		"id_product":  &graphql.Field{Type: graphql.Int},
 		"id_user":     &graphql.Field{Type: graphql.Int},
+		"user": &graphql.Field{
+			Type: UserType,
+		},
+		"product": &graphql.Field{
+			Type: ProductType,
+		},
 	},
 })
 
@@ -83,18 +111,13 @@ var HistoryType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "History",
 	Fields: graphql.Fields{
 		"id_history":  &graphql.Field{Type: graphql.Int},
-		"id_user":     &graphql.Field{Type: graphql.Int},
 		"id_checkout": &graphql.Field{Type: graphql.Int},
+		"checkout": &graphql.Field{
+			Type: CheckoutType,
+		},
 	},
 })
 
-var SearchType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Search",
-	Fields: graphql.Fields{
-		"id_search":  &graphql.Field{Type: graphql.Int},
-		"id_product": &graphql.Field{Type: graphql.Int},
-	},
-})
 
 var PenjualType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Penjual",
@@ -102,5 +125,17 @@ var PenjualType = graphql.NewObject(graphql.ObjectConfig{
 		"id_penjual": &graphql.Field{Type: graphql.Int},
 		"nama":       &graphql.Field{Type: graphql.String},
 		"email":      &graphql.Field{Type: graphql.String},
+	},
+})
+
+var AlamatType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Alamat",
+	Fields: graphql.Fields{
+		"id_alamat": &graphql.Field{Type: graphql.Int},
+		"id_user":   &graphql.Field{Type: graphql.Int},
+		"alamat":    &graphql.Field{Type: graphql.String},
+		"user": &graphql.Field{
+			Type: UserType,
+		},
 	},
 })

@@ -12,15 +12,16 @@ func AutoMigrateTables() {
 	}{
 		{"User", &models.User{}},
 		{"User_Penjual", &models.Penjual{}},
+		{"Alamat", &models.Alamat{}},
 		{"Product", &models.Product{}},
 		{"Keranjang", &models.Keranjang{}},
-		{"Search", &models.Search{}},
 		{"Checkout", &models.Checkout{}},
-		{"History", &models.History{}},
 		{"Favorite", &models.Favorite{}},
+		{"History", &models.History{}},
 	}
 
 	for _, m := range migrations {
+		log.Printf("🚧 Migrasi tabel %s...", m.Name)
 		if err := DB.AutoMigrate(m.Model); err != nil {
 			log.Fatalf("❌ AutoMigrate %s gagal: %v", m.Name, err)
 		}

@@ -18,12 +18,12 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"penjual": &graphql.Field{
-	Type: graphql.NewList(PenjualType),
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		var data []models.Penjual
-		return data, db.DB.Find(&data).Error
-	},
-},
+			Type: graphql.NewList(PenjualType),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				var data []models.Penjual
+				return data, db.DB.Find(&data).Error
+			},
+		},
 		"products": &graphql.Field{
 			Type: graphql.NewList(ProductType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -32,7 +32,7 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, err
 				}
-				return data, db.DB.Find(&data).Error
+				return data, nil
 			},
 		},
 		"checkouts": &graphql.Field{
@@ -63,18 +63,21 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"search": &graphql.Field{
-			Type: graphql.NewList(SearchType),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				var data []models.Search
-				return data, db.DB.Find(&data).Error
-			},
-		},
 		"idpenjual": &graphql.Field{
 			Type: graphql.NewList(PenjualType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Penjual
 				return data, db.DB.Find(&data).Error
+			},
+		},
+		"alamat": &graphql.Field{
+			Type: graphql.NewList(AlamatType),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				var data []models.Alamat
+				if err := db.DB.Preload("User").Find(&data).Error; err != nil {
+					return nil, err
+				}
+				return data, nil
 			},
 		},
 	},

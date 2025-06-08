@@ -3,7 +3,7 @@ package models
 type Product struct {
 	IDProduct  uint   `gorm:"column:id_product;primaryKey;autoIncrement" json:"id_product"`
 	IDPenjual  uint   `gorm:"column:id_penjual" json:"id_penjual"`
-	NamaProduk string `gorm:"namaproduk" json:"namaproduk"`
+	NamaProduk string `gorm:"column :namaproduk" json:"namaproduk"`
 	Kategori   string `gorm:"column:kategori" json:"kategori"`
 	Size       string `gorm:"column:size" json:"size"`
 	Deskripsi  string `gorm:"column:deskripsi" json:"deskripsi"`
