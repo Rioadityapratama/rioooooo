@@ -1,4 +1,3 @@
-// graphql/types.go
 package routes
 
 import (
@@ -50,13 +49,12 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Keranjang",
 	Fields: graphql.Fields{
-		// kamu pasti punya ini:
 		"id_keranjang": &graphql.Field{Type: graphql.Int},
 		"id_user":      &graphql.Field{Type: graphql.Int},
 		"id_product":   &graphql.Field{Type: graphql.Int},
 		"jumlah":       &graphql.Field{Type: graphql.Int},
 
-		// KAMU HARUS TAMBAHKAN INI ⬇
+		// Ditambahin agar user dan produt muncul
 		"user": &graphql.Field{
 			Type: UserType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -71,16 +69,6 @@ var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
-
-//var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
-//	Name: "Keranjang",
-//	Fields: graphql.Fields{
-//		"id_keranjang": &graphql.Field{Type: graphql.Int},
-//		"id_product":   &graphql.Field{Type: graphql.Int},
-//		"id_user":      &graphql.Field{Type: graphql.Int},
-//		"jumlah":       &graphql.Field{Type: graphql.Int},
-//	},
-//})
 
 var FavoriteType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Favorite",
