@@ -5,8 +5,8 @@ type History struct {
 	IDUser     uint `gorm:"column:id_user" json:"id_user"`
 	IDCheckout uint `gorm:"column:id_checkout" json:"id_checkout"`
 
-	User     User     `gorm:"foreignKey:IDUser;references:IDUser" json:"user"`
-	Checkout Checkout `gorm:"foreignKey:IDCheckout;references:IDCheckout" json:"checkout"`
+	User     User     `gorm:"foreignKey:IDUser;references:IDUser;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,-:all" json:"user"`
+	Checkout Checkout `gorm:"foreignKey:IDCheckout;references:IDCheckout;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,-:all" json:"checkout"`
 }
 
 func (History) TableName() string {

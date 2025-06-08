@@ -14,6 +14,7 @@ import (
 func main() {
 	// Koneksi ke database
 	db.ConnectDatabase()
+	db.AutoMigrateTables()
 
 	// Buat GraphQL schema (Query + Mutation)
 	schema := routes.NewSchema()

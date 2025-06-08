@@ -17,10 +17,21 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				return data, db.DB.Find(&data).Error
 			},
 		},
+		"penjual": &graphql.Field{
+	Type: graphql.NewList(PenjualType),
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		var data []models.Penjual
+		return data, db.DB.Find(&data).Error
+	},
+},
 		"products": &graphql.Field{
 			Type: graphql.NewList(ProductType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Product
+				err := db.DB.Preload("Penjual").Find(&data).Error
+				if err != nil {
+					return nil, err
+				}
 				return data, db.DB.Find(&data).Error
 			},
 		},
@@ -59,7 +70,7 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"penjual": &graphql.Field{
+		"idpenjual": &graphql.Field{
 			Type: graphql.NewList(PenjualType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Penjual

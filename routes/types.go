@@ -38,6 +38,7 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 		"price":      &graphql.Field{Type: graphql.Float},
 		"image":      &graphql.Field{Type: graphql.String},
 		"warna":      &graphql.Field{Type: graphql.String},
+		"penjual":    &graphql.Field{Type: PenjualType},
 	},
 })
 
