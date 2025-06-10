@@ -5,7 +5,8 @@ type Penjual struct {
 	Nama      string `gorm:"column:nama" json:"nama"`
 	Email     string `gorm:"column:email" json:"email"`
 	Password  string `gorm:"column:password" json:"password"`
-	NoTelp	string `gorm:"column:no_telp" json:"no_telp"`
+	Telepon   string `gorm:"column:telepon" json:"telepon"`
+	Profil    string `gorm:"column:profil" json:"profil"`
 }
 
 func (Penjual) TableName() string {

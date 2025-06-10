@@ -1,4 +1,4 @@
-package routes
+package types
 
 import (
 	"github.com/graphql-go/graphql"
@@ -7,10 +7,11 @@ import (
 var UserType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "User",
 	Fields: graphql.Fields{
-		"id_user": &graphql.Field{Type: graphql.Int},
-		"nama":    &graphql.Field{Type: graphql.String},
-		"email":   &graphql.Field{Type: graphql.String},
-		"no_telp": &graphql.Field{Type: graphql.String},
+		"id_user":  &graphql.Field{Type: graphql.Int},
+		"nama":     &graphql.Field{Type: graphql.String},
+		"email":    &graphql.Field{Type: graphql.String},
+		"telepon":  &graphql.Field{Type: graphql.String},
+		"password": &graphql.Field{Type: graphql.String},
 	},
 })
 
@@ -63,15 +64,16 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id_product": &graphql.Field{Type: graphql.Int},
 		"id_penjual": &graphql.Field{Type: graphql.Int},
-		"namaproduk": &graphql.Field{Type: graphql.String},
+		"name":       &graphql.Field{Type: graphql.String},
 		"kategori":   &graphql.Field{Type: graphql.String},
 		"size":       &graphql.Field{Type: graphql.String},
 		"deskripsi":  &graphql.Field{Type: graphql.String},
 		"brand":      &graphql.Field{Type: graphql.String},
-		"price":      &graphql.Field{Type: graphql.Float},
+		"price":      &graphql.Field{Type: graphql.Int},
 		"image":      &graphql.Field{Type: graphql.String},
 		"warna":      &graphql.Field{Type: graphql.String},
 		"penjual":    &graphql.Field{Type: PenjualType},
+		"stok":       &graphql.Field{Type: graphql.Int},
 	},
 })
 
@@ -87,8 +89,7 @@ var KeranjangType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"product": &graphql.Field{
 			Type: ProductType,
-		 },
-
+		},
 	},
 })
 
@@ -118,13 +119,15 @@ var HistoryType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-
 var PenjualType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Penjual",
 	Fields: graphql.Fields{
 		"id_penjual": &graphql.Field{Type: graphql.Int},
 		"nama":       &graphql.Field{Type: graphql.String},
 		"email":      &graphql.Field{Type: graphql.String},
+		"telepon":    &graphql.Field{Type: graphql.String},
+		"password":   &graphql.Field{Type: graphql.String},
+		"profil":     &graphql.Field{Type: graphql.String},
 	},
 })
 
