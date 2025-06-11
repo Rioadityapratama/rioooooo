@@ -14,19 +14,28 @@ import (
 func main() {
 	// Koneksi ke database
 	db.ConnectDatabase()
-	// db.AutoMigrateTables()
+	//db.AutoMigrateTables()
 
 	// Buat GraphQL schema (Query + Mutation)
-	schema := schema.NewSchema()
+	s := schema.NewSchema()
 
-	// Setup handler dengan GraphiQL UI
+	// Setup handler GraphQL
 	h := handler.New(&handler.Config{
-		Schema:   &schema,
+		Schema:   &s,
 		Pretty:   true,
-		GraphiQL: true,
+		GraphiQL: true, // kalau mau GraphiQL nya diaktifkan
 	})
 
+	// Serve GraphQL API
 	http.Handle("/graphql", h)
-	log.Println("🚀 Server GraphQL berjalan di: http://localhost:8080/graphql")
+
+	// Serve static files (Frontend HTML kamu)
+	fs := http.FileServer(http.Dir("./public"))
+	http.Handle("/", fs)
+
+	log.Println("🚀 Server berjalan di: http://localhost:8080")
+	log.Println("🚀 GraphQL: http://localhost:8080/graphql")
+	log.Println("🚀 Frontend: http://localhost:8080/register.html")
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
