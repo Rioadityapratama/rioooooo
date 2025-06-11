@@ -51,11 +51,11 @@ var CreatePenjual = &graphql.Field{
 var UpdatePenjual = &graphql.Field{
 	Type: types.PenjualType,
 	Args: graphql.FieldConfigArgument{
-		"id_penjual":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"id_penjual":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 		"nama":         &graphql.ArgumentConfig{Type: graphql.String},
 		"telepon":      &graphql.ArgumentConfig{Type: graphql.String},
-		"password":     &graphql.ArgumentConfig{Type: graphql.String},      // password baru
-		"old_password": &graphql.ArgumentConfig{Type: graphql.String},      // password lama
+		"password":     &graphql.ArgumentConfig{Type: graphql.String},    
+		"old_password": &graphql.ArgumentConfig{Type: graphql.String},    
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		id := getInt(p, "id_penjual")
@@ -158,7 +158,6 @@ var LoginPenjual = &graphql.Field{
 		}, nil
 	},
 }
-//ini penjual yang belum masuk
 
 var ForgetPasswordPenjual = &graphql.Field{
 	Type: graphql.String,

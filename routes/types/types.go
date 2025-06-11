@@ -64,6 +64,7 @@ var ProductType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id_product": &graphql.Field{Type: graphql.Int},
 		"id_penjual": &graphql.Field{Type: graphql.Int},
+		"id_favorite": &graphql.Field{Type: graphql.Int},
 		"name":       &graphql.Field{Type: graphql.String},
 		"kategori":   &graphql.Field{Type: graphql.String},
 		"size":       &graphql.Field{Type: graphql.String},

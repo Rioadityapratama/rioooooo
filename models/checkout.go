@@ -10,7 +10,6 @@ type Checkout struct {
 	Pembayaran       string `gorm:"column:pembayaran" json:"pembayaran"`
 	Jumlah           int    `gorm:"column:jumlah" json:"jumlah"`
 
-	// RELASI - tidak membuat kolom baru di DB, hanya untuk preload
 	User      User       `gorm:"foreignKey:IDUser;references:IDUser" json:"user"`
 	Product   Product    `gorm:"foreignKey:IDProduct;references:IDProduct" json:"product"`
 	Keranjang *Keranjang `gorm:"foreignKey:IDKeranjang;references:IDKeranjang" json:"keranjang,omitempty"`

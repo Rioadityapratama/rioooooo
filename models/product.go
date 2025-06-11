@@ -13,7 +13,8 @@ type Product struct {
 	Warna     string `gorm:"column:warna" json:"warna"`
 	Stok      int    `gorm:"column:stok" json:"stok"`
 
-	Penjual Penjual `gorm:"foreignKey:IDPenjual;references:IDPenjual" json:"penjual"`
+	Penjual    Penjual `gorm:"foreignKey:IDPenjual;references:IDPenjual" json:"penjual"`
+	IDFavorite *uint   `json:"id_favorite" gorm:"-"`
 }
 
 func (Product) TableName() string {

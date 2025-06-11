@@ -19,26 +19,25 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"usersbyid": &graphql.Field{
-			Type: types.PenjualType,
+			Type: types.UserType,
 			Args: graphql.FieldConfigArgument{
-			"id_user": &graphql.ArgumentConfig{Type: graphql.Int},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		var data models.Penjual
-		id := p.Args["id_user"].(int)
-		db.DB.First(&data, id)
-		return data, nil
+				"id_user": &graphql.ArgumentConfig{Type: graphql.Int},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				var data models.User
+				id := p.Args["id_user"].(int)
+				db.DB.First(&data, id)
+				return data, nil
 			},
 		},
-
-		"penjual": &graphql.Field{
+		"penjuals": &graphql.Field{
 			Type: graphql.NewList(types.PenjualType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Penjual
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"penjualbyid": &graphql.Field{
+		"penjualsbyid": &graphql.Field{
 			Type: types.PenjualType,
 			Args: graphql.FieldConfigArgument{
 				"id_penjual": &graphql.ArgumentConfig{Type: graphql.Int},
@@ -52,12 +51,37 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"products": &graphql.Field{
 			Type: graphql.NewList(types.ProductType),
+			Args: graphql.FieldConfigArgument{
+				"id_user": &graphql.ArgumentConfig{
+					Type: graphql.Int,
+				},
+			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Product
+
+				// Ambil semua product + penjual
 				err := db.DB.Preload("Penjual").Find(&data).Error
 				if err != nil {
 					return nil, err
 				}
+
+				var idUser uint = 0
+
+				if val, ok := p.Args["id_user"]; ok && val != nil {
+					idUser = uint(val.(int))
+				}
+
+				// Loop per product, cek apakah user memfavoritkan
+				for i := range data {
+					var fav models.Favorite
+					err := db.DB.Where("id_product = ? AND id_user = ?", data[i].IDProduct, idUser).First(&fav).Error
+					if err == nil {
+						data[i].IDFavorite = &fav.IDFavorite
+					} else {
+						data[i].IDFavorite = nil
+					}
+				}
+
 				return data, nil
 			},
 		},
@@ -72,31 +96,35 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.NewList(types.FavoriteType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Favorite
-				return data, db.DB.Find(&data).Error
+				err := db.DB.Preload("Product").Preload("User").Find(&data).Error
+				if err != nil {
+					return nil, err
+				}
+				return data, nil
 			},
 		},
-		"history": &graphql.Field{
+		"historys": &graphql.Field{
 			Type: graphql.NewList(types.HistoryType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.History
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"keranjang": &graphql.Field{
+		"keranjangs": &graphql.Field{
 			Type: graphql.NewList(types.KeranjangType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Keranjang
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"idpenjual": &graphql.Field{
+		"idpenjuals": &graphql.Field{
 			Type: graphql.NewList(types.PenjualType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Penjual
 				return data, db.DB.Find(&data).Error
 			},
 		},
-		"alamat": &graphql.Field{
+		"alamats": &graphql.Field{
 			Type: graphql.NewList(types.AlamatType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				var data []models.Alamat
