@@ -44,7 +44,6 @@ var CheckoutType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Int,
 		},
 
-		// RELASI
 		"user": &graphql.Field{
 			Type: UserType,
 		},
