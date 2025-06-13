@@ -35,7 +35,7 @@ func main() {
 
 	log.Println("🚀 Server berjalan di: http://localhost:8080")
 	log.Println("🚀 GraphQL: http://localhost:8080/graphql")
-	log.Println("🚀 Frontend: http://localhost:8080/register.html")
+	//log.Println("🚀 Frontend: http://localhost:8080/register.html")
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
